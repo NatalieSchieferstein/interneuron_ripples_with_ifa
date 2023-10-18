@@ -1,0 +1,20 @@
+{
+  "chizhov_micro": "cornflowerblue",
+  "chizhov_meso": "mediumblue",
+  "chizhov_nonstat_micro": "salmon",
+  "chizhov_nonstat_meso": "darkred",
+  "cyc0": "gray",
+  "cyc1": "white",
+  "fnet": "k",
+  "funit": "mediumblue",
+  "exp_micro": "mediumseagreen",
+  "exp_meso": "darkgreen",
+  "iext": "forestgreen",
+  "lif": "k",
+  "max": "c",
+  "min": "darkorange",
+  "on": "dodgerblue",
+  "mu": "dimgrey",
+  "reset": "y",
+  "vhist": "binary"
+}

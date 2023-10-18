@@ -1,0 +1,18 @@
+{
+  "axes.labelsize": 9,
+  "axes.titlesize": 9,
+  "figure.dpi": 500,
+  "font.family": "Arial",
+  "legend.edgecolor": "none",
+  "legend.facecolor": "none",
+  "legend.fontsize": 8,
+  "lines.linewidth": 1.0,
+  "lines.markersize": 3.0,
+  "mathtext.fontset": "dejavusans",
+  "text.latex.preamble": "\\usepackage[cm]{sfmath}",
+  "text.usetex": false,
+  "xtick.direction": "in",
+  "xtick.labelsize": 7,
+  "ytick.direction": "in",
+  "ytick.labelsize": 7
+}
