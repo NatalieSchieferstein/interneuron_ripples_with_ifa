@@ -2,8 +2,7 @@
 
 This repository contains all code to produce the simulations, analyses and figures of the manuscript 
 "Intra-ripple frequency accommodation in an inhibitory network model for hippocampal ripple oscillations"
-by Natalie Schieferstein, Tilo Schwalger, Benjamin Lindner, Richard Kempter
-currently under revision for PLOS CB.
+by Natalie Schieferstein, Tilo Schwalger, Benjamin Lindner, Richard Kempter (bioRxiv preprint: 10.1101/2023.01.30.526209).
 
 All code was written by Natalie Schieferstein.
 
