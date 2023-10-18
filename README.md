@@ -2,7 +2,8 @@
 
 This repository contains all code to produce the simulations, analyses and figures of the manuscript 
 "Intra-ripple frequency accommodation in an inhibitory network model for hippocampal ripple oscillations"
-by Natalie Schieferstein, Tilo Schwalger, Benjamin Lindner, Richard Kempter (bioRxiv preprint: 10.1101/2023.01.30.526209).
+by Natalie Schieferstein, Tilo Schwalger, Benjamin Lindner, Richard Kempter
+(bioRxiv preprint: 10.1101/2023.01.30.526209).
 
 All code was written by Natalie Schieferstein.
 
@@ -44,7 +45,7 @@ We used pypet (https://pypet.readthedocs.io/) to run large simulations in parall
 
 ### Example simulation h0 ###
 
-An example simulation (hash 0) can be downloaded here: https://box.hu-berlin.de/d/8feca38cef894f71b3e5/ 
+An example simulation (hash 0) can be downloaded here: https://zenodo.org/doi/10.5281/zenodo.10018496 
 and added to the simulations folder (>simulations/h0/Data_h0.hdf5, files are too large for GitHub). This simulation corresponds to the network of size N=10,000 seen in Fig 1 (the other network sizes are omitted to reduce the file size). Using the data from this example simulation Figures 3-5, and 8-10 can be reproduced right away by running main_plot_figures.py, without rerunning any simulations.
 
 ### Parameter settings ###
