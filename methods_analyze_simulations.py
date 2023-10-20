@@ -1029,7 +1029,7 @@ def plot_gauss_fit(hist, fit, mse, bin_centers, Vthr, Vr, color='k', ax=None, sh
 #%% Gaussian-drift approx vs simulation
 def performance_check_evaluation(traj_hash, Vt=1, reset=True, numerical_check=False, path_to_simulations='/simulations/'):
   
-  print('\n\nPerformance check for Gaussian-drift approx under constant drive (for Figs S1, S2)...')
+  print('\n\nPerformance check for Gaussian-drift approx under constant drive (for Figs S1A, S1B)...')
   
   from methods_simulations import recover_exploration, map_pstr, get_pfix_str
   
@@ -1037,8 +1037,9 @@ def performance_check_evaluation(traj_hash, Vt=1, reset=True, numerical_check=Fa
   datapath = 'results/gaussian_drift_approx_constant_drive_performance_check/'
   if not os.path.exists(datapath):
     os.makedirs(datapath)
-  df_runs = pd.read_hdf(datapath+'df_parameters_per_run_h{}.hdf5'.format(traj_hash))
-  df_net = pd.read_hdf(datapath+'df_network_configurations_h{}.hdf5'.format(traj_hash))
+    
+  df_runs = pd.read_csv(datapath+'df_parameters_per_run_h{}.csv'.format(traj_hash), index_col=0, squeeze=True)
+  df_net = pd.read_csv(datapath+'df_network_configurations_h{}.csv'.format(traj_hash), index_col=0, squeeze=True)
   df_net['Delta'] = df_net.tl
   print('The following network configurations were explored:')
   print(df_net)
@@ -1064,7 +1065,7 @@ def performance_check_evaluation(traj_hash, Vt=1, reset=True, numerical_check=Fa
   sim.rename(columns=pars_label, inplace=True)
   
   # should deprecate soon, I forgot to store scalar results of gauss analysis in traj.results.summary.scalarResults
-  if traj.analysis.gauss and ('v_av_mumin' not in sim.columns):
+  if traj.analysis.v_dynamics and ('v_av_mumin' not in sim.columns):
     print('Adding mumin estimate from spiking simulation to summary df sim')
     sim[['v_av_mumin', 'v_av_mumin_sd', 'v_av_sigmin']] = np.nan
     for i in range(len(sim)):
@@ -1081,9 +1082,9 @@ def performance_check_evaluation(traj_hash, Vt=1, reset=True, numerical_check=Fa
     sim['gauss_mu_min_sd_sim'] = (sim['v_av_mumin_sd']-traj.E_rest)/(traj.Vthr-traj.E_rest)
     sim['gauss_sig_min_sim'] = (sim['v_av_sigmin']-traj.E_rest)/(traj.Vthr-traj.E_rest)
     
-    print(sim['gauss_mu_min_sim'])
+    # print(sim['gauss_mu_min_sim'])
   
-  if not (sim[exploredParams] == df_runs[exploredParams]).all().all():
+  if not np.isclose(sim[exploredParams], df_runs[exploredParams]).all().all():
     raise ValueError('Mismatch between data frames df_runs and sim!')
   
   # merge the two data frames into one:
@@ -1147,13 +1148,9 @@ def performance_check_evaluation(traj_hash, Vt=1, reset=True, numerical_check=Fa
   
   
   # store results
-  df_net.to_hdf(datapath+'df_network_configurations_h{}_evaluated.hdf5'.format(traj_hash), key='df_net', format='table', data_columns=True)
-  df_runs.to_hdf(datapath+'df_parameters_per_run_h{}_evaluated.hdf5'.format(traj_hash), key='df_runs', format='table', data_columns=True)
-  # human-readable:
   df_net.to_csv(datapath+'df_network_configurations_h{}_evaluated.csv'.format(traj_hash))
-  df_runs.to_hdf(datapath+'df_parameters_per_run_h{}_evaluated.csv'.format(traj_hash))  
+  df_runs.to_csv(datapath+'df_parameters_per_run_h{}_evaluated.csv'.format(traj_hash))  
   
-
   traj.f_restore_default()
   print('[done]')
   return 

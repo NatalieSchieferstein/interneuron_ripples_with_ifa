@@ -675,7 +675,7 @@ def pypet_make_config_brunel_hakim99(mu_ext, sigma_ext, traj_hash, path_to_simul
   return
 
 def pypet_makeConfig_performance_check(exploration, traj_hash, Nint=1000, n_sim=15, do_membrane_potential_dynamics_analysis=True, 
-                                       path_to_simulations='./simulations/'): 
+                                       path_to_simulations='./simulations/', CoresToUse=25): 
   '''
   prepare a large pypet network simulation config to compare with the analytical gauss approximation over a range of parameters
   INPUT:
@@ -778,16 +778,13 @@ def pypet_makeConfig_performance_check(exploration, traj_hash, Nint=1000, n_sim=
 
   # setup pypet trajectory for simulating all the desired network configurations and input levels
   pypet_setup_config('mymicro', changeParams, forExploration, input_params, aux_params, commentTraj, 
-                                           traj_hash = traj_hash, cart_product=False, CoresToUse=50, 
+                                           traj_hash = traj_hash, cart_product=False, CoresToUse=CoresToUse, 
                                            path_to_simulations=path_to_simulations)
   datapath = 'results/gaussian_drift_approx_constant_drive_performance_check/'
   if not os.path.exists(datapath):
     os.makedirs(datapath)
-  df_net.to_hdf(datapath+'df_network_configurations_h{}.hdf5'.format(traj_hash), key='df_net', format='table', data_columns=True)
-  df_runs.to_hdf(datapath+'df_parameters_per_run_h{}.hdf5'.format(traj_hash), key='df_runs', format='table', data_columns=True)
-  # human-readable:
   df_net.to_csv(datapath+'df_network_configurations_h{}.csv'.format(traj_hash))
-  df_runs.to_csv(datapath+'df_parameters_per_run_h{}.hdf5'.format(traj_hash))
+  df_runs.to_csv(datapath+'df_parameters_per_run_h{}.csv'.format(traj_hash))
   return 
 
 ################################################################ aux functions for  performance check

@@ -2333,10 +2333,8 @@ def plot_figure_10(parameters, n_num = 10, n_analyt = 100, show_real_mumin=False
 def plot_figure_S1A(traj_hash, reset=True, path_to_figures = './figures/'):
   
   datapath = 'results/gaussian_drift_approx_constant_drive_performance_check/'
-  df_runs = pd.read_hdf(datapath+'df_runs_h{}_eval.hdf5'.format(traj_hash))
-  df_net = pd.read_hdf(datapath+'df_net_h{}_eval.hdf5'.format(traj_hash))
-  # df_runs = pd.read_hdf(datapath+'df_parameters_per_run_h{}_evaluated.hdf5'.format(traj_hash))
-  # df_net = pd.read_hdf(datapath+'df_network_configurations_h{}_evaluated.hdf5'.format(traj_hash))
+  df_runs = pd.read_csv(datapath+'df_parameters_per_run_h{}_evaluated.csv'.format(traj_hash), index_col=0, squeeze=True)
+  df_net = pd.read_csv(datapath+'df_network_configurations_h{}_evaluated.csv'.format(traj_hash), index_col=0, squeeze=True)
   
   exploration, p_fix, p_var = recover_exploration(df_runs) 
   
@@ -2390,10 +2388,8 @@ def plot_figure_S1A(traj_hash, reset=True, path_to_figures = './figures/'):
 def plot_figure_S1B(traj_hash, path_to_figures = './figures/'):
   
   datapath = 'results/gaussian_drift_approx_constant_drive_performance_check/'
-  df_runs = pd.read_hdf(datapath+'df_runs_h{}_eval.hdf5'.format(traj_hash))
-  df_net = pd.read_hdf(datapath+'df_net_h{}_eval.hdf5'.format(traj_hash))
-  # df_runs = pd.read_hdf(datapath+'df_parameters_per_run_h{}_evaluated.hdf5'.format(traj_hash))
-  # df_net = pd.read_hdf(datapath+'df_network_configurations_h{}_evaluated.hdf5'.format(traj_hash))
+  df_runs = pd.read_csv(datapath+'df_parameters_per_run_h{}_evaluated.csv'.format(traj_hash), index_col=0, squeeze=True)
+  df_net = pd.read_csv(datapath+'df_network_configurations_h{}_evaluated.csv'.format(traj_hash), index_col=0, squeeze=True)
   exploration, p_fix, p_var = recover_exploration(df_runs)  
   
   # --- construct figure

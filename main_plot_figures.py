@@ -18,7 +18,7 @@ Hashes to simulation data plotted in each figure are provided as input arguments
 """
 
 ###############################################################################################################################################################################
-all_simulations_available = True # set to True if main_run_simulations.py has been run and all simulations are stored in /simulations/
+all_simulations_available = False # set to True if main_run_simulations.py has been run and all simulations are stored in /simulations/
 ###############################################################################################################################################################################
 
 plot_fig = {1: True,
@@ -39,6 +39,7 @@ plot_fig = {1: True,
             'r45' : True,   # Reviewer Figures 4, 5
             'r6' : True,    # Reviewer Figure 6      
   }
+
 
 if not all_simulations_available:
   for key in [1, 2, 6, 7, 's1a', 's1b', 's2c', 'r12', 'r3', 'r45', 'r6']:
@@ -130,7 +131,7 @@ if plot_fig[10]:
 '''
 Supplementary Figures A and B of S1 Appendix
 '''
-traj_hash = 246 # or 3 when h3 has been rerun. Otherwise we provide the results of our own simulation (with hash 246) in >results/gaussian_drift_approx_constant_drive_performance_check/... These data are sufficient to regenerate the figures S1, S2.
+traj_hash = 3 # We provide the results needed for plotting in >results/gaussian_drift_approx_constant_drive_performance_check/... These data are sufficient to regenerate the figures S1 A and B.
 
 if plot_fig['s1a']:
   plot_figure_S1A(traj_hash = traj_hash, reset=True, path_to_figures = path_to_figures)
