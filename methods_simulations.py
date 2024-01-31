@@ -457,7 +457,7 @@ def pypet_makeConfig_lif_ifa_fromcyclostat(traj_hash_stat=None, Nint=None, nreps
   aux_params['analysis.fmin'] = fmin
   aux_params['analysis.fmax'] = fmax
   aux_params['analysis.v_dynamics'] = False
-  aux_params['postproc.v_recordwindow_for_simulation'] = aux_params['postproc.v_recordwindow']
+  # aux_params['postproc.v_recordwindow_for_simulation'] = aux_params['postproc.v_recordwindow']
   # aux_params['linear_stability.Icrit_nA']=traj.linear_stability.Icrit_nA
   # aux_params['linear_stability.fcrit']= traj.linear_stability.fcrit
   # aux_params['linear_stability.I0crit_nA']= traj.linear_stability.I0crit_nA
@@ -557,6 +557,8 @@ def pypet_makeConfig_lif_ifa_fromcyclostat(traj_hash_stat=None, Nint=None, nreps
   else:
     raise ValueError('unknown stimulus shape {}!'.format(shape))
     
+  
+  aux_params['postproc.v_recordwindow_for_simulation'] = aux_params['postproc.v_recordwindow'] # only record what should be stored later
   
   # number of settings we want to explore so far
   if len(forExploration.keys()):

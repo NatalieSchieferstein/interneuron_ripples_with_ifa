@@ -1050,6 +1050,88 @@ def iterate_constant_drive_analytical(mu_min_0, Iext, D, Delta, K, tm, Vr, Vt=1,
    
   return df, traces, fig, ax
 
+def plot_convergence_to_asymptotic_dynamics(mu_min_high, mu_min_low, Iext, D, Delta, K, tm, Vr, T= 30, ax=[], reset=True):
+  '''
+  ax: 2x2 axis for plotting. Left: start with mu_min_high > mumin_stat, right: start with mu_min_low < mumin_stat. Top: rate, bottom: voltage
+  T: [ms] total time to show
+  '''
+  # ---- ANALYTICAL DERIVATION OF DYNAMICS ------------------------------------------------------------------------------------------
+  
+  mu_min_stat = gaussian_drift_approx_stat(Iext, D, Delta, K, tm, Vr=Vr, reset=reset)[0] # asymptotic mumin
+  
+  # derive and store dynamics in one cycle starting with: mu_min_stat, mu_min_high, or mu_min_low resp.:
+  asymp, high_init, low_init = {}, {}, {}
+  
+  # (asymptotic) dynamics for asymptotic mumin as initial value, analytically derived
+  asymp['t_off'], asymp['mu_max'], asymp['mu_reset'], asymp['mu_min'], asymp['f_inst'], \
+  asymp['f_unit'], _, _, _, asymp['t'], asymp['mu'], asymp['rate'], asymp['I'] \
+  = integrate_1cycle_wconstantdrive_analytically(mu_min_stat, Iext, D, Delta, K, tm, Vr, reset=reset) 
+  
+  # dynamics for high initial membrane potential, analytically derived
+  high_init['t_off'], high_init['mu_max'], high_init['mu_reset'], high_init['mu_min'], high_init['f_inst'], \
+  high_init['f_unit'], _, _, _, high_init['t'], high_init['mu'], high_init['rate'], high_init['I'] \
+  = integrate_1cycle_wconstantdrive_analytically(mu_min_high, Iext, D, Delta, K, tm, Vr, reset=reset) 
+  
+  # dynamics for low initial membrane potential, analytically derived
+  low_init['t_off'], low_init['mu_max'], low_init['mu_reset'], low_init['mu_min'], low_init['f_inst'], \
+  low_init['f_unit'], _, _, _, low_init['t'], low_init['mu'], low_init['rate'], low_init['I'] \
+  = integrate_1cycle_wconstantdrive_analytically(mu_min_low, Iext, D, Delta, K, tm, Vr, reset=reset) 
+  
+  # ---- PLOTTING ------------------------------------------------------------------------------------------
+  if not len(ax):
+    fig, ax = plt.subplots(2,2,sharex=True, sharey='row')
+    despine(ax, which=['top', 'bottom', 'right'])
+  # gridline([0], [ax[0][0], ax[1][0]], 'y', zorder=1)
+  gridline([Vr, 1], [ax[1][0], ax[1][1]], 'y', zorder=1)
+  gridline(Iext, [ax[1][0], ax[1][1]], 'y', color=my_colors['iext'], lw=1, linestyle='-', zorder=1)
+  
+  # plot first cycle with mu_min_high
+  # mark cycle 
+  for row in range(2):
+    ax[row][0].axvspan(0, high_init['t_off'] + Delta, alpha=0.15, color=my_colors['cyc0'], zorder=-20, ec=None)
+  ax[0][0].plot(high_init['t'], high_init['rate'], color='k', zorder=10)
+  ax[1][0].plot(high_init['t'], high_init['mu'], color=my_colors['mu'], zorder=10)
+  
+  # plot first cycle with mu_min_low
+  # mark cycle 
+  for row in range(2):
+    ax[row][1].axvspan(0, low_init['t_off'] + Delta, alpha=0.15, color=my_colors['cyc0'], zorder=-20, ec=None)
+  ax[0][1].plot(low_init['t'], low_init['rate'], color='k', zorder=10)
+  ax[1][1].plot(low_init['t'], low_init['mu'], color=my_colors['mu'], zorder=10)
+  
+  # plot subsequent cycles with asymptotic dynamics:
+  ncyc = int(np.ceil(T / (asymp['t_off'] + Delta))) # more cycles than needed to fill time T
+  dt = np.mean(np.diff(asymp['t']))
+  tstart_high = high_init['t_off'] + Delta # start time for next cycle
+  tstart_low = low_init['t_off'] + Delta # start time for next cycle
+  
+  for i in range(ncyc):
+    ax[0][0].plot(tstart_high + asymp['t'], asymp['rate'], 'k')
+    ax[0][1].plot(tstart_low + asymp['t'], asymp['rate'], 'k')
+    ax[1][0].plot(tstart_high + asymp['t'], asymp['mu'], color=my_colors['mu'])
+    ax[1][1].plot(tstart_low + asymp['t'], asymp['mu'], color=my_colors['mu'])
+    tstart_high += asymp['t'][-1] + dt
+    tstart_low += asymp['t'][-1] + dt
+  
+  # mark initial value
+  ax[1][0].plot(0, mu_min_high, '.', color=my_colors['min'], zorder=20)
+  ax[1][1].plot(0, mu_min_low, '.', color=my_colors['min'], zorder=20)
+  
+  # scale bar
+  scalebar = AnchoredSizeBar(ax[1][1].transData, 5, '5 ms', 'lower right', frameon=False, borderpad=.1 ) 
+  ax[1][1].add_artist(scalebar)
+  
+  # formatting
+  ax[0][0].set_xlim([-.1, T])
+  ax[0][0].set_ylim([-20,1000])
+  ax[1][0].set_ylim([mu_min_low-.5, Iext+.5])
+  ax[0][0].set_ylabel('rate\n[spk/s]')
+  ax[1][0].set_ylabel('voltage,\ndrive')
+
+  return ax
+
+
+
 def plot_frequency_difference_pw_constant_drive(D, Delta, K, tm, Vr, reset=False, Vt=1, Imin=None, Imax=None, \
                                            mu_margin=.3 , dmu=.01, dI=.1, fmax=100, fmin=-100, fig=[], ax=[]):
   '''
@@ -1086,7 +1168,7 @@ def plot_frequency_difference_pw_constant_drive(D, Delta, K, tm, Vr, reset=False
   = gaussian_drift_approx_stat(Iext, D, Delta, K, tm, Vr=Vr, Vt=Vt, reset=reset)[:-3]  # get stationary values
   mu_min_min, mu_min_max = np.min(mu_min)-mu_margin, np.min([np.max(mu_min)+mu_margin, mu_min_max])
   mu_min0 = np.arange(mu_min_min, mu_min_max, dmu) # range for mumin
-  
+
   # get transient values:
   II, mm = np.meshgrid(Iext, mu_min0)
   t_off0 = get_popspk_end(II, mm, D, Delta, K, tm, Vt=Vt)
@@ -1311,6 +1393,7 @@ def analysis_IFA_constant_drive_analytical(Iext_min, Iext_max, nsteps, mu_min_0,
   if not fig:
     fig_phase.tight_layout()
   return fig_time, fig_phase, ax_time, ax_phase, df, traces
+
 
 #%% Gaussian-drift approx. analytical: pw linear drive
 

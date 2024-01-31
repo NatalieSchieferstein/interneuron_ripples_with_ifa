@@ -21,25 +21,25 @@ Hashes to simulation data plotted in each figure are provided as input arguments
 all_simulations_available = False # set to True if main_run_simulations.py has been run and all simulations are stored in /simulations/
 ###############################################################################################################################################################################
 
-plot_fig = {1: True,
+plot_fig = {0: True,
+            1: True,
             2: True, 
             3: True,
             4: True,
             5: True,
             6: True,
             7: True,
-            8: False,
+            8: True,
             9: True,
             10: True,
             's1a': True,    # Supplementary Fig A in Appendix S1
             's1b' : True,   # Supplementary Fig B in Appendix S1
-            's2c' : True,   # Supplementary Fig A in Appendix S2
+            's2c' : True,   # Supplementary Fig C in Appendix S2
             'r12' : True,   # Reviewer Figures 1, 2
             'r3' : True,    # Reviewer Figure 3
             'r45' : True,   # Reviewer Figures 4, 5
             'r6' : True,    # Reviewer Figure 6      
   }
-
 
 if not all_simulations_available:
   for key in [1, 2, 6, 7, 's1a', 's1b', 's2c', 'r12', 'r3', 'r45', 'r6']:
@@ -94,7 +94,8 @@ traj_hash_spw_drive = 2 # simulations under time-dependent drive for Fig 2
 
 #%% Manuscript Figures 1-10 (Results, Methods)
 
-plot_figure_1_fixN(traj_hash = traj_hash_ex, run_idx = [0, 5, 9, 11], path_to_simulations = path_to_simulations ) # plot example simulation h0
+if plot_fig[0]:
+  plot_figure_1_fixN(traj_hash = traj_hash_ex, run_idx = [0, 5, 9, 11], path_to_simulations = path_to_simulations ) # plot example simulation h0
 
 if plot_fig[1]:
   plot_figure_1(traj_hash= traj_hash_constant_drive, path_to_simulations = path_to_simulations, path_to_figures=path_to_figures) # 215, traj_name='Data_mymicro_LIF-delta-DiffApprox_SS___WITH_tref_p_ii_Nint_record_micro_tl_IPSPint_Vreset___FOR_Nint_level_h215', 
@@ -143,7 +144,8 @@ Supplementary Figure A of S2 Appendix
 '''
 if plot_fig['s2c']:
   plot_figure_S2C(traj_hash_ABCD_stat = [1001, 1002, 1003, 1004], traj_hash_ABCD_trans = [1006, 1007, 1008, 1009] , \
-                 path_to_figures=path_to_figures, path_to_simulations= path_to_simulations) # all simulations done in main_run_simulations.py
+                  traj_hash_ABCD_squarepulse = [1010, 1011, 1012, 1013], 
+                  path_to_figures=path_to_figures, path_to_simulations= path_to_simulations) # all simulations done in main_run_simulations.py
 
 #%% Reviewer Figures 1, 2
 if plot_fig['r12']:

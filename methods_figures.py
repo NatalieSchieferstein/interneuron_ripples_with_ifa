@@ -31,7 +31,7 @@ from methods_simulations import convert_input, f_oscillation_analysis_stationary
 from methods_analytical import analysis_IFA_constant_drive_analytical, dde_bifurcation_analysis_numerical, dde_extract_last_cycle, \
   find_trajectories_linear_drive, gaussian_drift_approx_stat, gaussian_drift_approx_stat_numerical, \
   gaussian_drift_approx_transient, get_Iext_lower_bound, get_pt_fullsynch, integrate_dde_numerically, integrate_dde_numerically_until_convergence, \
-  visualize_traces_wlineardrive
+  plot_convergence_to_asymptotic_dynamics, visualize_traces_wlineardrive
 from methods_analyze_simulations import pypet_gaussian_drift_approx_stat, plot_rate, plot_vhist, plot_raster, plot_ifa_example_run, \
   plot_ifa_linreg, get_error_gauss_drift_approx
 
@@ -1168,6 +1168,114 @@ def plot_figure_5(traj_hash_stat, example_cycle=1, nsteps=4, \
   if not os.path.exists(path_stat_info):
     store_info_cyclostat_lif_simulation(traj_hash=traj_hash_stat, path_to_simulations=path_to_simulations)
   info = pd.read_csv(path_stat_info, index_col=0, squeeze=True, header=None)
+  D, Delta, K, tm, Vr, I_full \
+  = info['D'], info['Delta'], info['K'], info['tm'], info['Vr'],  info['I_full']
+  print('D: {}, Delta: {}, K: {}, tm: {}, Vr: {}, I_full: {}'.format(D, Delta, K, tm, Vr, I_full))
+  
+  # --- CONSTANT DRIVE 
+  Iext_min, mu_min_max = get_Iext_lower_bound(D, Delta, K, tm, Vr, reset=reset, Iext_min=0, Iext_max=3, dI=.1)
+  
+  # summary IFA figure -- constant drive
+  # --- construct figure
+  with plt.rc_context({"axes.labelsize": 8, "axes.titlesize": 8, "legend.fontsize": 8,"font.size": 8,\
+                       "xtick.labelsize": 6, "ytick.labelsize": 6,\
+                        "xtick.direction": "out", "ytick.direction": "out", 'xtick.major.pad': 1, 'ytick.major.pad': 1}):
+    fig_width= plos_width_fullpage # width_a4_wmargin # 21*cm
+    fig_height = fig_width*.6 #9*cm #10.5*cm
+    fig = plt.figure(figsize=(fig_width, fig_height))
+    gs = gridspec.GridSpec(3, 2, figure=fig, height_ratios = [1, 1, 1], hspace=.35, wspace=.5)#, width_ratios=[5,2], height_ratios=[2,3])
+  
+    gs_0 = gs[0,:].subgridspec(2,2, height_ratios = [.5,2], hspace=.2, wspace=.1)
+    gs_A_sup = gs[1,0].subgridspec(1,2, width_ratios=[30,1])
+    gs_A = gs_A_sup[0,0].subgridspec(2, 3, height_ratios = [.5,2], wspace=.5, hspace=.2)
+    gs_B = gs[2,0].subgridspec(1, 3, width_ratios = [20, .5, 2], wspace=.1)
+    gs_C = gs[1:,1].subgridspec(3, 1, height_ratios=[1,.5,2], hspace=.1)
+    
+    ax_0 = gs_0.subplots(sharey='row', sharex=True)
+    ax_A = gs_A.subplots(sharex=True).T
+    ax_B = gs_B.subplots() #[fig.add_subplot(gs_B[0,0]), fig.add_subplot(gs_B[0,1])]
+    ax_B[-1].remove()
+    ax_C = gs_C.subplots(sharex=True)
+    despine(ax_C)
+    despine(ax_0, which=['top', 'right', 'bottom'])
+    despine(ax_A, which=['top', 'right', 'bottom'])
+    despine(ax_A[1:,:], which=['left'])
+    
+    ax_0[0][0].text(-1.2, 9, 'Ai', transform=ax_A[0][0].transAxes, size=panel_labelsize, weight='bold')
+    ax_0[0][0].text(5.2, 9.2, 'Aii', transform=ax_A[0][0].transAxes, size=panel_labelsize, weight='bold')
+    ax_A[0][0].text(-1.2, 1.6, 'Aiii', transform=ax_A[0][0].transAxes, size=panel_labelsize, weight='bold')
+    ax_B[0].text(-1.2, -.6, 'B', transform=ax_A[0][1].transAxes, size=panel_labelsize, weight='bold')
+    ax_C[0].text(2.38, 1.7, 'C', transform=ax_A[-1][0].transAxes, size=panel_labelsize, weight='bold')
+    
+    # --- fill figure
+    # --- B -------------------------------------
+    fig, ax_C, ax_B, df, traces_analytical \
+    = analysis_IFA_constant_drive_analytical(Iext_min+.6, I_full, nsteps, mu_min_max, D, Delta, K, tm, Vr, reset=True, \
+                                             fmax=fmax, fmin=fmin, fig=fig, ax_time = ax_C, ax_phase=ax_B)[1:]
+    ax_B[0].set_title('')
+    ax_B[0].set_ylim(top=mu_min_max)
+    
+    # --- new top panel ------------------------------------------------------------
+    mu_min_high = df.loc[example_cycle, 'mu_min_start']
+    mu_min_low = df.iloc[-1-example_cycle, :].mu_min_start
+    Iext_toff = df.loc[example_cycle, 'Iext_toff']
+    ax_0 = plot_convergence_to_asymptotic_dynamics(mu_min_high, mu_min_low, Iext_toff, D, Delta, K, tm, Vr, T= 40, ax=ax_0, reset=reset)
+    
+    # --- A ------------------------------------
+    # show traces for constant Iext which was reached in the example_cycle (up vs downstroke)
+    mu_min_0_stat = gaussian_drift_approx_stat(Iext_toff, D, Delta, K, tm, Vr=Vr, reset=reset)[0]
+    fig, ax_A = visualize_traces_wlineardrive(D, Delta, K, tm, Vr, m = 0, \
+                                              mu_min_0=[mu_min_high, mu_min_0_stat, mu_min_low], \
+                                              Iext_toff = Iext_toff, \
+                                              fig=fig, ax=ax_A, reset=reset, i_ref=1, fmin=fmin, fmax=fmax)
+    # add cycle numbers for reference
+    ax_A[0][0].set_title('up')# + r'$\mu_\mathrm{min}^0 > \mu_\mathrm{min}(I_\mathrm{E})$')#('upstroke\n' + r'$\mu_\mathrm{min}^0 > \mu_\mathrm{min}(I_\mathrm{E})$'+'\n(cycle {})'.format(example_cycle+1))
+    ax_A[0][0].text(0.05,1,'c{}'.format(example_cycle+1), ha='left', va='top', color='dimgrey', fontsize=plt.rcParams['xtick.labelsize'], \
+                    transform = ax_A[0][0].transAxes)
+    ax_A[2][0].set_title('down')# + r'$\mu_\mathrm{min}^0 < \mu_\mathrm{min}(I_\mathrm{E})$')#('upstroke\n' + r'$\mu_\mathrm{min}^0 > \mu_\mathrm{min}(I_\mathrm{E})$'+'\n(cycle {})'.format(example_cycle+1))
+    ax_A[2][0].text(0.05,1,'c{}'.format(2*nsteps-1-example_cycle), ha='left', va='top', color='dimgrey', fontsize=plt.rcParams['xtick.labelsize'], \
+                    transform = ax_A[2][0].transAxes)
+    ax_A[1][0].set_title('asymptotic') # + r'$\mu_\mathrm{min}^0 = \mu_\mathrm{min}(I_\mathrm{E})$')#('upstroke\n' + r'$\mu_\mathrm{min}^0 > \mu_\mathrm{min}(I_\mathrm{E})$'+'\n(cycle {})'.format(example_cycle+1))
+    
+    # --- legends
+    handles = ax_A[-1,-1].get_legend_handles_labels()[0]
+    ax_A[-1,-1].legend(handles=handles, handlelength=1, bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0)
+    fig.savefig('test.pdf', bbox_inches='tight')
+    fig.savefig(path_to_figures+'Fig5.pdf', bbox_inches='tight')
+    fig.savefig(path_to_figures+'Fig5.tif', bbox_inches='tight')
+    fig.savefig(path_to_figures+'Fig5.svg', bbox_inches='tight')
+  return 
+
+def plot_figure_5_abc(traj_hash_stat, example_cycle=1, nsteps=4, \
+                                reset=True, fmax=200, fmin=-200, \
+                                path_to_simulations = './simulations/', path_to_figures = './figures/'):
+  '''
+  Plot Fig 5.
+
+  Parameters
+  ----------
+  traj_hash_stat : Hash to simulation data the parameters of which should be used (D, Delta, K...)
+  example_cycle : int optional. Which cycle to show in A. The default is 1.
+  nsteps : int, optional. Number of steps in pw constant drive (up and down resp.). The default is 4.
+  reset : bool, optional. Reset. The default is True.
+  fmax, fmin : float, optional. [Hz] Limit for freq colorbar. The default is +/-200.
+  path_to_simulations : str, optional. The default is './simulations/'.
+  path_to_figures : str, optional. The default is './figures/'.
+
+  Returns
+  -------
+  None (figure is stored in path_to_figures)
+
+  '''
+ 
+  print('\n\nPlotting Fig 5...')
+
+  # load parameters from the provided simulationn
+  traj_path_stat = pypet_get_trajectoryPath(traj_hash = traj_hash_stat, path_to_simulations = path_to_simulations)
+  path_stat_info = traj_path_stat + 'info.csv'
+  if not os.path.exists(path_stat_info):
+    store_info_cyclostat_lif_simulation(traj_hash=traj_hash_stat, path_to_simulations=path_to_simulations)
+  info = pd.read_csv(path_stat_info, index_col=0, squeeze=True, header=None)
   D, Delta, K, tm, Vr, I_hopf, I_full \
   = info['D'], info['Delta'], info['K'], info['tm'], info['Vr'], info['I_hopf'], info['I_full']
   print('D: {}, Delta: {}, K: {}, tm: {}, Vr: {}, I_hopf: {}, I_full: {}'.format(D, Delta, K, tm, Vr, I_hopf, I_full))
@@ -1310,7 +1418,8 @@ def plot_figures_6_7(traj_stat_hash=0, traj_trans_hash=2,  m_val = np.r_[.4, .2,
   trajectories_all, traces_all \
   = find_trajectories_linear_drive(gauss_approx_exploration, m_val, D, Delta, K, tm, Vr, Iext_min, Iext_plateau, Iext_start = [1,1.3,1.5],\
                                    mu_min_start_first_cycle = mu_min_start_first_cycle, tolerance_Iext= .1, reset=reset)
-
+  trajectories_all.to_csv('results/gaussian_drift_approx_linear_drive_trajectories_fig6-7.csv') # store
+  
   # plot example with strongest slope, same layout as for constant drive
   fig6 = plot_figure_6(gauss_approx_exploration, trajectories_all, traces_all, D, Delta, K, tm, Vr, Iext_min, Iext_plateau, m=.4, \
                        reset=reset, I_hopf=I_hopf, fmax=fmax, fmin=fmin, dt_num = dt_num, t0_ramp = plateau_time_fig6/2, ms= ms, \
@@ -1498,6 +1607,7 @@ def plot_figure_6(df_all, trajectories_all, traces, D, Delta, K, tm, Vr, Iext_mi
     # add transient dynamics, keypoints:
     for mm in [m, -m]:
       trajectory_m = trajectory[trajectory.m == mm] # select up or downstroke 
+      print('m= ', mm, '. Iext at time toff for each cycle: ', trajectory_m.Iext_toff) # to cite in main text
       ax_C[0].plot(trajectory_m.time_toff + offset[mm], trajectory_m.f_stat, 'k.')
       ax_C[0].plot(trajectory_m.time_toff + offset[mm], trajectory_m.f_inst, linestyle=':', color='dimgrey', zorder=2, lw=.5)
       ax_C[0].scatter(trajectory_m.time_toff + offset[mm], trajectory_m.f_inst, \
@@ -2838,11 +2948,75 @@ def plot_performance_details_frequencies(df_runs, df_net, theory, show_gauss_num
 
 
 #%% Supplementary Fig S2C
-def plot_figure_S2C(traj_hash_ABCD_stat = [1001, 1003, 1002, 1004], traj_hash_ABCD_trans = [1006, 1007, 1008, 1009], path_to_figures = './figures/', path_to_simulations = './simulations/'):
-  print('\n\nPlotting Fig S3...')
+def plot_figure_S2C(traj_hash_ABCD_stat = [1001, 1003, 1002, 1004], traj_hash_ABCD_trans = [1006, 1007, 1008, 1009], 
+                    traj_hash_ABCD_squarepulse = [1010, 1011, 1012, 1013], 
+                    path_to_figures = './figures/', path_to_simulations = './simulations/'):
+  print('\n\nPlotting Fig S2C...')
   # extract simulation hashes:
-  traj_hash_stat_A, traj_hash_stat_B, traj_hash_stat_C, traj_hash_stat_D = traj_hash_ABCD_stat
-  traj_hash_trans_A, traj_hash_trans_B, traj_hash_trans_C, traj_hash_trans_D = traj_hash_ABCD_trans
+  traj_hash_stat_A, traj_hash_stat_B, traj_hash_stat_C, traj_hash_stat_D = traj_hash_ABCD_stat # stationary sims for models A-D
+  traj_hash_trans_A, traj_hash_trans_B, traj_hash_trans_C, traj_hash_trans_D = traj_hash_ABCD_trans # double ramp sims for models A-D
+  traj_hash_sqp_A, traj_hash_sqp_B, traj_hash_sqp_C, traj_hash_sqp_D = traj_hash_ABCD_squarepulse # square pulse sims for models A-D
+  
+  fig_width= width_a4_wmargin
+  fig_height = fig_width #*.8
+  
+  fig = plt.figure(figsize=(fig_width, fig_height))#, constrained_layout=True
+  
+  gs = gridspec.GridSpec(2,1, figure=fig, hspace=.4, height_ratios=[1,2.5*4/3])
+  gs1 = gs[0].subgridspec(1,4, wspace=.3)
+  gs2 = gs[1].subgridspec(4,4, wspace=.3, hspace=.3)
+  
+  ax_top = gs1.subplots(sharey=True)
+  ax_bottom = gs2.subplots(sharey='row', sharex='col')
+  
+  despine(ax_top)
+  despine(ax_bottom)
+  
+  ax_top[0].set_ylabel('frequency [Hz]')
+  ax_bottom[-1,0].set_ylabel('frequency [Hz]')
+  
+  dx, dy = 0, 1.05
+  for i in range(4):
+    ax_top[i].text(dx, dy, string.ascii_lowercase[i]+'1', transform=ax_top[i].transAxes, weight='bold')
+    ax_bottom[0,i].text(dx, dy, string.ascii_lowercase[i]+'2', transform=ax_bottom[0,i].transAxes, weight='bold')
+    ax_bottom[1,i].text(dx, dy, string.ascii_lowercase[i]+'3', transform=ax_bottom[1,i].transAxes, weight='bold')
+    ax_bottom[2,i].text(dx, dy, string.ascii_lowercase[i]+'4', transform=ax_bottom[2,i].transAxes, weight='bold')
+    ax_bottom[3,i].text(dx, dy, string.ascii_lowercase[i]+'5', transform=ax_bottom[3,i].transAxes, weight='bold')
+  
+  # --- data ---------------------------------------------
+  # --- Donoso2018 original network ---------------------------------------------------------
+  ax_top[0], ax_bottom[:,0] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_A, traj_trans_hash = traj_hash_trans_A,
+                                                       traj_sqp_hash = traj_hash_sqp_A, ax_stat = ax_top[0], ax_trans = ax_bottom[:,0],
+                                                       level_crit = 1500, xmax=16_000, path_to_simulations=path_to_simulations)
+  
+  
+  # --- Donoso2018 network with independent Poisson inputs ---------------------------------------------------------
+  ax_top[1], ax_bottom[:,1] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_B, traj_trans_hash = traj_hash_trans_B, 
+                                                       traj_sqp_hash = traj_hash_sqp_B, ax_stat = ax_top[1], ax_trans = ax_bottom[:,1], 
+                                                       level_crit = 1500, xmax=16_000, path_to_simulations=path_to_simulations) # try 1005 & 10051 for a larger network 
+  
+  # --- Reduced network with refractory period ---------------------------------------------------------
+  ax_top[2], ax_bottom[:,2] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_C, traj_trans_hash = traj_hash_trans_C, 
+                                                       traj_sqp_hash = traj_hash_sqp_C, ax_stat = ax_top[2], ax_trans = ax_bottom[:,2], 
+                                                       xmax=2.2, path_to_simulations=path_to_simulations)
+  
+  # --- Reduced network as in manuscript -----------------------------------------------------------------------
+  ax_top[3], ax_bottom[:,3] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_D, traj_trans_hash = traj_hash_trans_D, 
+                                                       traj_sqp_hash = traj_hash_sqp_D, ax_stat = ax_top[3], ax_trans = ax_bottom[:,3], 
+                                                       xmax=1.3, path_to_simulations=path_to_simulations, show_second_yaxis=True, label_finst=True)
+
+  ax_top[-1].legend(bbox_to_anchor=(1.2, 1.2), handlelength=1, edgecolor='dimgrey', loc='upper right', borderaxespad=0., fontsize = 6, facecolor='white')
+  
+  fig.savefig(path_to_figures + 'FigS2C.pdf', bbox_inches='tight')
+  fig.savefig(path_to_figures + 'FigS2C.tif', bbox_inches='tight')
+  return
+
+def plot_figure_S2C_ramponly(traj_hash_ABCD_stat = [1001, 1003, 1002, 1004], traj_hash_ABCD_trans = [1006, 1007, 1008, 1009], 
+                             path_to_figures = './figures/', path_to_simulations = './simulations/'):
+  print('\n\nPlotting Fig S2C...')
+  # extract simulation hashes:
+  traj_hash_stat_A, traj_hash_stat_B, traj_hash_stat_C, traj_hash_stat_D = traj_hash_ABCD_stat # stationary sims for models A-D
+  traj_hash_trans_A, traj_hash_trans_B, traj_hash_trans_C, traj_hash_trans_D = traj_hash_ABCD_trans # double ramp sims for models A-D
   
   fig_width= width_a4_wmargin
   fig_height = fig_width*.8
@@ -2872,19 +3046,19 @@ def plot_figure_S2C(traj_hash_ABCD_stat = [1001, 1003, 1002, 1004], traj_hash_AB
   
   # --- data ---------------------------------------------
   # --- Donoso2018 original network ---------------------------------------------------------
-  ax_top[0], ax_bottom[:,0] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_A, traj_trans_hash = traj_hash_trans_A, ax_stat = ax_top[0], ax_trans = ax_bottom[:,0],\
-                                                     level_crit = 1500, xmax=16_000, path_to_simulations=path_to_simulations)
+  ax_top[0], ax_bottom[:,0] = plot_freqs_stat_vs_trans_ramponly(traj_stat_hash = traj_hash_stat_A, traj_trans_hash = traj_hash_trans_A, ax_stat = ax_top[0], ax_trans = ax_bottom[:,0],\
+                                                                level_crit = 1500, xmax=16_000, path_to_simulations=path_to_simulations)
   
   
   # --- Donoso2018 network with independent Poisson inputs ---------------------------------------------------------
-  ax_top[1], ax_bottom[:,1] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_B, traj_trans_hash = traj_hash_trans_B, ax_stat = ax_top[1], ax_trans = ax_bottom[:,1],\
+  ax_top[1], ax_bottom[:,1] = plot_freqs_stat_vs_trans_ramponly(traj_stat_hash = traj_hash_stat_B, traj_trans_hash = traj_hash_trans_B, ax_stat = ax_top[1], ax_trans = ax_bottom[:,1],\
                                                      level_crit = 1500, xmax=16_000, path_to_simulations=path_to_simulations) # try 1005 & 10051 for a larger network 
   
   # --- Reduced network with refractory period ---------------------------------------------------------
-  ax_top[2], ax_bottom[:,2] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_C, traj_trans_hash = traj_hash_trans_C, ax_stat = ax_top[2], ax_trans = ax_bottom[:,2], xmax=2.2, path_to_simulations=path_to_simulations)
+  ax_top[2], ax_bottom[:,2] = plot_freqs_stat_vs_trans_ramponly(traj_stat_hash = traj_hash_stat_C, traj_trans_hash = traj_hash_trans_C, ax_stat = ax_top[2], ax_trans = ax_bottom[:,2], xmax=2.2, path_to_simulations=path_to_simulations)
   
   # --- Reduced network as in manuscript -----------------------------------------------------------------------
-  ax_top[3], ax_bottom[:,3] = plot_freqs_stat_vs_trans(traj_stat_hash = traj_hash_stat_D, traj_trans_hash = traj_hash_trans_D, ax_stat = ax_top[3], ax_trans = ax_bottom[:,3], xmax=1.3, path_to_simulations=path_to_simulations, show_second_yaxis=True, label_finst=True)
+  ax_top[3], ax_bottom[:,3] = plot_freqs_stat_vs_trans_ramponly(traj_stat_hash = traj_hash_stat_D, traj_trans_hash = traj_hash_trans_D, ax_stat = ax_top[3], ax_trans = ax_bottom[:,3], xmax=1.3, path_to_simulations=path_to_simulations, show_second_yaxis=True, label_finst=True)
 
   ax_top[-1].legend(bbox_to_anchor=(1.2, 1.2), handlelength=1, edgecolor='dimgrey', loc='upper right', borderaxespad=0., fontsize = 6, facecolor='white')
   
@@ -2892,7 +3066,176 @@ def plot_figure_S2C(traj_hash_ABCD_stat = [1001, 1003, 1002, 1004], traj_hash_AB
   fig.savefig(path_to_figures + 'FigS2C.tif', bbox_inches='tight')
   return
 
-def plot_freqs_stat_vs_trans(traj_stat_hash, traj_trans_hash, ax_stat, ax_trans, level_crit = None, xmax=100, ylim=[0,400], tpad=10, fmin=70, show_second_yaxis=False, path_to_simulations='./simulations/', label_finst=False):
+def plot_freqs_stat_vs_trans(traj_stat_hash, traj_trans_hash, traj_sqp_hash, ax_stat, ax_trans, 
+                             level_crit = None, xmax=100, ylim=[0,400], tpad=10, fmin=70, 
+                             show_second_yaxis=False, path_to_simulations='./simulations/', label_finst=False):
+  # load stationary data 
+  traj_stat = pypet_load_trajectory(traj_hash = traj_stat_hash, path_to_simulations=path_to_simulations)
+  res_stat = traj_stat.results.summary.scalarResults  
+  res_stat['level'] = res_stat['parameters.input.level'].copy()
+  if not level_crit:
+    level_crit = traj_stat.linear_stability.Icrit_nA - 1e-3 # subtract epsilon to avoid numerical errors in comparison with critical level
+  
+  # --- plot stationary frequencies over drive
+  ax_stat.fill_between([0,xmax*1.1], 140, 220, facecolor='lightgray', edgecolor='face', zorder=0)  
+  ax_stat.plot(res_stat[res_stat.level>=level_crit]['level'], res_stat[res_stat.level>=level_crit]['freq_net'], marker='^', color=my_colors['fnet'], zorder=4, label=r'$f_\mathrm{net}^\mathrm{\infty}$')
+  # res_stat.plot(ax=ax_stat, x= 'level', y='freq_net', marker='^', color=my_colors['fnet'], zorder=3, legend=False, label=r'$f_\mathrm{net}^\mathrm{\infty}$')
+  res_stat.plot(ax=ax_stat, x= 'level', y='freq_unit_mean', marker='o', color=my_colors['funit'], zorder=3, legend=False, label=r'$f_\mathrm{unit}^\mathrm{\infty}$')  #yerr = 'freq_unit_std', 
+  ax_stat.set_xlabel('drive [{}]'.format(traj_stat.input.unit.replace('sec','s')))
+  ax_stat.set_xlim([0,xmax])
+  ax_stat.set_ylim(ylim)
+  
+  # --- load transient drive data (double ramp) ----------------------------
+  traj_trans = pypet_load_trajectory(traj_hash = traj_trans_hash, path_to_simulations=path_to_simulations) # double-ramps
+  
+  # load results from IFA analysis
+  ifa_stats = pd.read_csv(pypet_get_trajectoryPath(traj_hash = traj_trans_hash, path_to_simulations=path_to_simulations) + 'analysis_IFA_fmin-{}/data_ifa_h{}_summary.csv'.format(fmin, traj_trans_hash), index_col=0, squeeze=True)
+  ax_trans2 = list(np.zeros(len(ifa_stats) +1))
+  
+  for i in range(len(ifa_stats)):      
+      # --- find run indices of interest (the simulations belonging to the network configuration specified by "exploration"-----------------------------------------------
+      run_idx = pypet_find_runs(traj_trans, 'ramp_time_up', lambda x: x==ifa_stats.loc[i]['ramp_time_up'])             
+      # nreps = len(run_idx) # number of simulation repetitions done for this network configuration
+      
+      # load correct runs:
+      ifreq_t = pypet_get_from_runs(traj_trans, 'network.ifreq_discr_t',run_idx=run_idx) # dict 
+      ifreq = pypet_get_from_runs(traj_trans, 'network.ifreq_discr',run_idx=run_idx) # dict
+      traj_trans.v_idx = run_idx[0]
+      stimulus = traj_trans.derived_parameters.runs[traj_trans.v_crun]['stim_plot']
+
+      # important time stamps
+      tw = traj_trans.analysis.ifreq_targetwindow
+      t0 = np.mean(tw) # middle of ramp stimulation
+      t_stim_on = tw[0] + (np.diff(tw) - (traj_trans.ramp_time_up + traj_trans.plateau_time + traj_trans.ramp_time_down)) / 2 # reinferring Tedge here
+      t_stim_off = t_stim_on + traj_trans.ramp_time_up + traj_trans.plateau_time + traj_trans.ramp_time_down # end of ramp
+      # t_mid_plateau = t_stim_on + traj_trans.ramp_time_up + traj_trans.plateau_time/2 # middle of plateau
+      # color markers depending on TIME of instfreq
+      norm = matplotlib.colors.TwoSlopeNorm(t0, vmin=t_stim_on, vmax=t_stim_off)
+      
+      # restrict ifreq analysis to time points DURING RAMP:
+      ifreq_t_all = list_from_dict(ifreq_t, output_numpy=True) 
+      ifreq_all  = list_from_dict(ifreq, output_numpy=True)    
+      ix_keep = (ifreq_t_all >= t_stim_on) & (ifreq_t_all <= t_stim_off)
+      ifreq_t_all = ifreq_t_all[ix_keep]
+      ifreq_all = ifreq_all[ix_keep]
+      
+      # current at time of ifreq measurement
+      Iext_trans = stimulus[(ifreq_t_all/traj_trans.dt).astype(int)]  
+  
+      # --- plot instantanous frequencies over drive in ax_stat: ONLY FOR THE SYMMETRIC RAMP!
+      if traj_trans.ramp_time_up == traj_trans.ramp_time_down:
+        color = plt.cm.coolwarm(1-norm(ifreq_t_all))[:,:3]
+        ax_stat.scatter(Iext_trans, ifreq_all, c = color, marker='.', s=2.5, zorder=2, label=r'$f_\mathrm{net}^\mathrm{inst}$')
+        # mark point of full synch in stat plot
+        gridline(traj_trans.input.peak, ax_stat, axis='x', zorder=1)
+      else:
+        color = 'grey'
+        
+      # --- plot instantanous frequencies over time
+      ax_trans[i].scatter(ifreq_t_all-t0, ifreq_all, marker='.', s=2.5, c = color, zorder=2) #, label=r'$f_\mathrm{net}^\mathrm{inst}$'*label_finst)
+  
+      # --- plot stationary frequencies over time
+      # interpolate stationary frequencies from stat simulation result
+      fnet_stat_interp = np.interp(stimulus, res_stat['parameters.input.level'].values, res_stat['freq_net'])
+      fnet_stat_interp[stimulus < level_crit] = nan
+      t = np.arange(stimulus.size)*traj_trans.dt - t0
+      ax_trans[i].plot(t, fnet_stat_interp, 'k', zorder=3)
+  
+      # limit yaxis
+      ax_trans[i].set_ylim(ylim)
+      ax_trans[i].set_xlim([t_stim_on-tpad-t0, t_stim_off+tpad-t0])
+  
+      # mark transient stimulus (normalized)
+      ax_trans2[i] = ax_trans[i].twinx()
+      time = np.arange(len(stimulus)) * traj_trans.dt
+      ax_trans2[i].plot(time-t0, stimulus/np.max(stimulus), color='gray')#, label='drive')
+      ax_trans2[i].set_ylim([0,4.5])
+      Ifull_nA = np.max(stimulus) # save max stim amplitude to correctly scale square pulse input later 
+      
+      # if show_second_yaxis and (i==len(ifa_stats)-1):
+      #   ax_trans2[i].set_yticks([0,1])
+      #   ax_trans2[i].tick_params(axis='y', labelcolor='gray', color='gray')
+      #   ax_trans2[i].spines['right'].set_color('gray')
+      #   ax_trans2[i].set_ylabel('drive [normalized]', color='gray')
+      #   ax_trans2[i].spines['top'].set_visible(False)
+      # else:
+      despine(ax_trans2[i])
+      ax_trans2[i].set_yticks([])    
+        
+      # add linear regression line 
+      ifa_slope = ifa_stats.loc[i]['ifa_slope']
+      ifa_intercept = ifa_stats.loc[i]['ifa_intercept']
+      time = np.arange(t_stim_on, t_stim_off+traj_trans.dt, traj_trans.dt) -t0
+      ax_trans[i].plot(time, ifa_slope*time + ifa_intercept, color='grey', linestyle='-', lw=.5, label=r'$\chi_\mathrm{IFA}$='+'{:.1f} Hz/ms'.format(ifa_slope))  
+      ax_trans[i].text(1,1, r'$\chi_\mathrm{IFA}$='+'{:.1f} Hz/ms'.format(ifa_slope), ha='right',  va='bottom', fontsize=6, transform=ax_trans[i].transAxes)
+      # ax_trans[i].legend(bbox_to_anchor=(1,1), loc='lower right', handlelength=1, borderaxespad=0., fontsize=6)
+  
+  # ----- bottom row: add square pulse simulations -------------------------------------------------------------------------------------
+  traj_sqp = pypet_load_trajectory(traj_hash = traj_sqp_hash, path_to_simulations=path_to_simulations) # square pulse data
+  # --- plot instantanous frequencies over time
+  ifreq_t = pypet_get_from_runs(traj_sqp, 'network.ifreq_discr_t') # dict 
+  ifreq = pypet_get_from_runs(traj_sqp, 'network.ifreq_discr') # dict
+  traj_sqp.v_idx = 0
+  stimulus = traj_sqp.derived_parameters.runs[traj_sqp.v_crun]['stim_plot'] # extract stimulus
+  
+  # important time stamps
+  tw = traj_sqp.analysis.ifreq_targetwindow
+  t0 = np.mean(tw) # middle of ramp stimulation
+  t_stim_on = tw[0] + (np.diff(tw) - (traj_sqp.plateau_time)) / 2 # reinferring Tedge here
+  t_stim_off = t_stim_on + traj_sqp.plateau_time # end of ramp
+  
+  # restrict ifreq analysis to time points DURING square pulse:
+  ifreq_t_all = list_from_dict(ifreq_t, output_numpy=True) 
+  ifreq_all  = list_from_dict(ifreq, output_numpy=True)    
+  ix_keep = (ifreq_t_all >= t_stim_on) & (ifreq_t_all <= t_stim_off)
+  ifreq_t_all = ifreq_t_all[ix_keep]
+  ifreq_all = ifreq_all[ix_keep]
+  
+  # current at time of ifreq measurement
+  Iext_trans = stimulus[(ifreq_t_all/traj_sqp.dt).astype(int)]  
+  
+  # --- plot instantanous frequencies over time
+  color = 'grey'
+  ax_trans[-1].scatter(ifreq_t_all-t0, ifreq_all, marker='.', s=2.5, c = color, zorder=2) #, label=r'$f_\mathrm{net}^\mathrm{inst}$'*label_finst)
+  
+  # --- plot stationary frequencies over time
+  # interpolate stationary frequencies from stat simulation result
+  fnet_stat_interp = np.interp(stimulus, res_stat['parameters.input.level'].values, res_stat['freq_net'])
+  fnet_stat_interp[stimulus < level_crit] = nan
+  t = np.arange(stimulus.size)*traj_sqp.dt - t0
+  ax_trans[-1].plot(t, fnet_stat_interp, 'k', zorder=3)
+  
+  # limit yaxis
+  ax_trans[-1].set_ylim(ylim)
+  ax_trans[-1].set_xlim([t_stim_on-tpad-t0, t_stim_off+tpad-t0])
+  
+  # mark transient stimulus (normalized)
+  ax_trans2[-1] = ax_trans[-1].twinx()
+  time = np.arange(len(stimulus)) * traj_sqp.dt
+  ax_trans2[-1].plot(time-t0, stimulus/Ifull_nA, color='gray') # hack: hardcoded stimulus amplitude here!
+  ax_trans2[-1].set_ylim([0,4.5])
+  if show_second_yaxis:
+    ax_trans2[-1].set_yticks([0,1])
+    ax_trans2[-1].tick_params(axis='y', labelcolor='gray', color='gray')
+    ax_trans2[-1].spines['right'].set_color('gray')
+    ax_trans2[-1].set_ylabel('drive [normalized]', color='gray')
+    ax_trans2[-1].spines['top'].set_visible(False)
+  else:
+    despine(ax_trans2[-1])
+    ax_trans2[-1].set_yticks([])   
+    
+  # add linear regression line 
+  with np.load(pypet_get_trajectoryPath(traj_hash = traj_sqp_hash, path_to_simulations=path_to_simulations) + 'analysis_IFA_fmin-{}/data_ifa_hash{}.npz'.format(fmin, traj_sqp_hash)) as data:
+    ifa_slope = data['ifa_slope']
+    ifa_intercept = data['ifa_intercept']
+  time = np.arange(t_stim_on, t_stim_off+traj_sqp.dt, traj_sqp.dt) -t0
+  ax_trans[-1].plot(time, ifa_slope*time + ifa_intercept, color='grey', linestyle='-', lw=.5, label=r'$\chi_\mathrm{IFA}$='+'{:.1f} Hz/ms'.format(ifa_slope))  
+  ax_trans[-1].text(1,1, r'$\chi_\mathrm{IFA}$='+'{:.1f} Hz/ms'.format(ifa_slope), ha='right',  va='bottom', fontsize=6, transform=ax_trans[-1].transAxes)
+    
+  ax_trans[-1].set_xlabel('time [ms]')
+  return ax_stat, ax_trans
+
+def plot_freqs_stat_vs_trans_ramponly(traj_stat_hash, traj_trans_hash, ax_stat, ax_trans, level_crit = None, xmax=100, ylim=[0,400], tpad=10, fmin=70, show_second_yaxis=False, path_to_simulations='./simulations/', label_finst=False):
   # load stationary data 
   traj_stat = pypet_load_trajectory(traj_hash = traj_stat_hash, path_to_simulations=path_to_simulations)
   res_stat = traj_stat.results.summary.scalarResults  
@@ -2993,7 +3336,6 @@ def plot_freqs_stat_vs_trans(traj_stat_hash, traj_trans_hash, ax_stat, ax_trans,
       # ax_trans[i].legend(bbox_to_anchor=(1,1), loc='lower right', handlelength=1, borderaxespad=0., fontsize=6)
   
   ax_trans[-1].set_xlabel('time [ms]')
-  
   return ax_stat, ax_trans
 
 def plot_freqs_stat_vs_trans_reduced(traj_stat_hash, traj_trans_hash, ax_stat, ax_trans, level_crit = None, xmax=100, ylim=[0,400], tpad=10, fmin=70, show_second_yaxis=False, path_to_simulations='./simulations/', label_finst=False):
@@ -3199,3 +3541,39 @@ def plot_reviewer_figure_6(traj_hash=1, run_idx = [0,5,9,11], path_to_simulation
   fig.savefig(path_to_figures+'fig_R6_rev_psd-V.pdf', bbox_inches='tight')
   return
 
+
+#%% Spielplatz
+
+with plt.rc_context({"axes.labelsize": 8, "axes.titlesize": 8, "legend.fontsize": 8,"font.size": 8,\
+                     "xtick.labelsize": 6, "ytick.labelsize": 6,\
+                      "xtick.direction": "out", "ytick.direction": "out", 'xtick.major.pad': 1, 'ytick.major.pad': 1}):
+  fig_width= plos_width_fullpage # width_a4_wmargin # 21*cm
+  fig_height = fig_width*.6 #9*cm #10.5*cm
+  fig = plt.figure(figsize=(fig_width, fig_height))
+  gs = gridspec.GridSpec(3, 2, figure=fig, height_ratios = [1, 1, 1], hspace=.35, wspace=.5)#, width_ratios=[5,2], height_ratios=[2,3])
+
+  gs_0 = gs[0,:].subgridspec(2,2, height_ratios = [.5,2], hspace=.2, wspace=.1)
+  gs_A_sup = gs[1,0].subgridspec(1,2, width_ratios=[30,1])
+  gs_A = gs_A_sup[0,0].subgridspec(2, 3, height_ratios = [.5,2], wspace=.5, hspace=.2)
+  gs_B = gs[2,0].subgridspec(1, 3, width_ratios = [20, .5, 2], wspace=.1)
+  gs_C = gs[1:,1].subgridspec(3, 1, height_ratios=[1,.5,2], hspace=.1)
+  
+  ax_0 = gs_0.subplots(sharey=True)
+  ax_A = gs_A.subplots(sharex=True).T
+  ax_B = gs_B.subplots() #[fig.add_subplot(gs_B[0,0]), fig.add_subplot(gs_B[0,1])]
+  ax_B[-1].remove()
+  ax_C = gs_C.subplots(sharex=True)
+  despine(ax_C)
+  despine(ax_0, which=['top', 'right', 'bottom'])
+  despine(ax_A, which=['top', 'right', 'bottom'])
+  despine(ax_A[1:,:], which=['left'])
+  
+  ax_0[0][0].text(-1.2, 9, 'Ai', transform=ax_A[0][0].transAxes, size=panel_labelsize, weight='bold')
+  ax_0[0][0].text(5.2, 9, 'Aii', transform=ax_A[0][0].transAxes, size=panel_labelsize, weight='bold')
+  ax_A[0][0].text(-1.2, 1.5, string.ascii_uppercase[1], transform=ax_A[0][0].transAxes, size=panel_labelsize, weight='bold')
+  ax_B[0].text(-1.2, -.65, string.ascii_uppercase[2], transform=ax_A[0][1].transAxes, size=panel_labelsize, weight='bold')
+  ax_C[0].text(2.38, 1.5, string.ascii_uppercase[3], transform=ax_A[-1][0].transAxes, size=panel_labelsize, weight='bold')
+  
+  fig.savefig('test.pdf', bbox_inches='tight')
+
+plt.close('all')
