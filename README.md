@@ -1,5 +1,9 @@
 # README #
 
+
+[![DOI](https://zenodo.org/badge/706735658.svg)](https://zenodo.org/doi/10.5281/zenodo.10602551)
+
+
 This repository contains all code to produce the simulations, analyses and figures of the manuscript 
 "Intra-ripple frequency accommodation in an inhibitory network model for hippocampal ripple oscillations"
 by Natalie Schieferstein, Tilo Schwalger, Benjamin Lindner, Richard Kempter
