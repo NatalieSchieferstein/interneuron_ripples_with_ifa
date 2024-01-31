@@ -176,7 +176,7 @@ do_ifa_analysis(traj_hash=traj_hash, save2file=True, path_to_simulations =path_t
 # TRANSIENT DRIVE: SQUARE PULSE, different networks
 # parameters for IFA simulations:
 nreps = 30
-strength = 0.8
+strength = 0.8 # set amplitude of square pulse relative to full synchrony (here: 80%)
 Tinit, Tedge, t_pad = 200., 20., 20.
 plateau_time = 45
 ramp_time = 0
@@ -194,7 +194,7 @@ aux_params['postproc.v_recordwindow'] = aux_params['postproc.v_recordwindow_for_
 
 # --- network from Donoso et al. 2018 Fig 1 ---------------------------------------------------------------------------------
 traj_hash= 1010
-commentTraj = 'Donoso et al. 2018 default network: show that square pulse drive (up to 50% of Ifull) does not yield IFA  (compare to h1001).'
+commentTraj = 'Donoso et al. 2018 default network: show that square pulse drive (up to 80% of Ifull) does not yield IFA  (compare to h1001).'
 pypet_setup_config('Donoso2018', {}, forExploration, input_params, aux_params, commentTraj, cart_product=False, \
                     traj_hash=traj_hash, path_to_simulations = path_to_simulations, record_per_run={'runs': [0], 'record':['v']}) # setup configuration file
 pypet_run_simulation(traj_hash = traj_hash, path_to_simulations =path_to_simulations) # run simulation
@@ -204,7 +204,7 @@ do_ifa_analysis(traj_hash=traj_hash, save2file=True, path_to_simulations =path_t
 # --- network from Donoso et al. 2018 but with INDEPENDENT Poisson inputs ----------------------------------------------------
 traj_hash= 1011
 changeParams = {'inputmode':'DiffApprox'}
-commentTraj = 'Donoso et al. 2018 network with independent Gaussian white noise input (noise increases with drive as for Poisson input): show that square pulse drive (up to 50% of Ifull) does not yield IFA (compare to h1002)'
+commentTraj = 'Donoso et al. 2018 network with independent Gaussian white noise input (noise increases with drive as for Poisson input): show that square pulse drive (up to 80% of Ifull) does not yield IFA (compare to h1002)'
 pypet_setup_config('Donoso2018', changeParams, forExploration, input_params, aux_params, commentTraj, cart_product=False, \
                     traj_hash=traj_hash, path_to_simulations = path_to_simulations, record_per_run={'runs': [0], 'record':['v']}) # setup configuration file
 pypet_run_simulation(traj_hash = traj_hash, path_to_simulations =path_to_simulations) # run simulation
@@ -213,8 +213,8 @@ do_ifa_analysis(traj_hash=traj_hash, save2file=True, path_to_simulations =path_t
 
 # # ## --- reduced model with refrac period ---------------------------------------------------------------------------------------
 traj_hash= 1012
-commentTraj = 'Reduced model with refractory period (+ larger noise & delay to ensure unimodal voltage distributions, Nint=200 for comparability with Donoso2018): show that square pulse drive (up to 50% of Ifull) does not yield IFA. Try lower plateau to avoid tref-induced period2 oscillations.  (compare to h1003)'
-# --- load point of full synchrony and scale peak input down to 60% 
+commentTraj = 'Reduced model with refractory period (+ larger noise & delay to ensure unimodal voltage distributions, Nint=200 for comparability with Donoso2018): show that square pulse drive (up to 80% of Ifull) does not yield IFA (compare to h1003)'
+# --- load point of full synchrony and scale peak input down to 80% 
 info_stat = pd.read_csv(pypet_get_trajectoryPath(traj_hash = 1003, path_to_simulations=path_to_simulations) + 'info.csv', 
                         index_col=0, squeeze=True, header=None)
 pypet_makeConfig_lif_ifa_fromcyclostat(traj_hash_stat=1003, nreps=nreps, traj_hash=traj_hash, comment=commentTraj, \
@@ -226,8 +226,8 @@ do_ifa_analysis(traj_hash=traj_hash, save2file=True, path_to_simulations =path_t
 
 ## --- reduced model as in manuscript ---------------------------------------------------------------------------------------
 traj_hash= 1013
-commentTraj = 'Reduced model as in manuscript (Fig 2, Nint=200 for comparability with Donoso2018): show that square pulse drive (up to 50% of Ifull) does not yield IFA  (compare to h1004)'
-# --- load point of full synchrony and scale peak input down to 60% 
+commentTraj = 'Reduced model as in manuscript (Fig 2, Nint=200 for comparability with Donoso2018): show that square pulse drive (up to 80% of Ifull) does not yield IFA (compare to h1004)'
+# --- load point of full synchrony and scale peak input down to 80% 
 info_stat = pd.read_csv(pypet_get_trajectoryPath(traj_hash = 1004, path_to_simulations=path_to_simulations) + 'info.csv', 
                         index_col=0, squeeze=True, header=None)
 
